@@ -1,6 +1,8 @@
 package it.epicode.Gestioneviaggiazieldali.entity;
 
 public enum StatoViaggio {
-    IN_PROGRAMMA,
-    COMPLETATO
+    PROGRAMMATO,
+    IN_CORSO,
+    COMPLETATO,
+    ANNULLATO
 }

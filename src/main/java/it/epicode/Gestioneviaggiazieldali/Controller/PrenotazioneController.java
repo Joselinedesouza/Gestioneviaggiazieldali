@@ -1,11 +1,9 @@
 package it.epicode.Gestioneviaggiazieldali.Controller;
 
-import it.epicode.Gestioneviaggiazieldali.entity.Prenotazione;
+import it.epicode.Gestioneviaggiazieldali.Dto.PrenotazioneDto;
 import it.epicode.Gestioneviaggiazieldali.service.PrenotazioneService;
-import jakarta.persistence.EntityNotFoundException;
-import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -14,38 +12,37 @@ import java.util.List;
 @RequestMapping("/api/prenotazioni")
 public class PrenotazioneController {
 
-    @Autowired
-    private PrenotazioneService prenotazioneService;
+    private final PrenotazioneService prenotazioneService;
 
-    @PostMapping("/dipendente/{dipendenteId}/viaggio/{viaggioId}")
-    public ResponseEntity<?> creaPrenotazione(@PathVariable Long dipendenteId, @PathVariable Long viaggioId) {
-        try {
-            Prenotazione prenotazione = prenotazioneService.creaPrenotazione(dipendenteId, viaggioId);
-            return ResponseEntity.ok(prenotazione);
-        } catch (IllegalStateException e) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
-        } catch (EntityNotFoundException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
-        }
+    public PrenotazioneController(PrenotazioneService prenotazioneService) {
+        this.prenotazioneService = prenotazioneService;
     }
 
-    @GetMapping("/dipendente/{dipendenteId}")
-    public List<Prenotazione> getPrenotazioniPerDipendente(@PathVariable Long dipendenteId) {
-        return prenotazioneService.getPrenotazioniByDipendente(dipendenteId);
+    @GetMapping
+    public List<PrenotazioneDto> getAll() {
+        return prenotazioneService.trovaTutti();
     }
 
-    @GetMapping("/viaggio/{viaggioId}")
-    public List<Prenotazione> getPrenotazioniPerViaggio(@PathVariable Long viaggioId) {
-        return prenotazioneService.getPrenotazioniByViaggio(viaggioId);
+    @GetMapping("/{id}")
+    public PrenotazioneDto getById(@PathVariable Long id) {
+        return prenotazioneService.trovaPerId(id);
+    }
+
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    public PrenotazioneDto creaPrenotazione(@RequestBody @Valid PrenotazioneDto prenotazioneDto) {
+        return prenotazioneService.salva(prenotazioneDto);
+    }
+
+    @PutMapping("/{id}")
+    public PrenotazioneDto aggiorna(@PathVariable Long id,
+                                                @RequestBody @Valid PrenotazioneDto prenotazioneDto) {
+        return prenotazioneService.aggiorna(id, prenotazioneDto);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> cancellaPrenotazione(@PathVariable Long id) {
-        try {
-            prenotazioneService.cancellaPrenotazione(id);
-            return ResponseEntity.ok().build();
-        } catch (EntityNotFoundException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
-        }
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void eliminaPrenotazione(@PathVariable Long id) {
+        prenotazioneService.elimina(id);
     }
 }

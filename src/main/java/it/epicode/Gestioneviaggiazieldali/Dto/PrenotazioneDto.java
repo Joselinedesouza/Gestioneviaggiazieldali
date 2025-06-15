@@ -24,4 +24,5 @@ public class PrenotazioneDto {
 
     @Size(max = 500, message = "Le note non possono superare i 500 caratteri")
     private String note; // Preferenze volo, alloggio, ecc.
+    private String preferenze;
 }

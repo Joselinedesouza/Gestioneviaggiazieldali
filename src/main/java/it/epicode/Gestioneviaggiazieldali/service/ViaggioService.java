@@ -1,57 +1,82 @@
 package it.epicode.Gestioneviaggiazieldali.service;
 
-import it.epicode.Gestioneviaggiazieldali.entity.Dipendente;
+
+import it.epicode.Gestioneviaggiazieldali.Dto.ViaggioDto;
+import it.epicode.Gestioneviaggiazieldali.Mapper.ViaggioMapper;
+import it.epicode.Gestioneviaggiazieldali.entity.StatoViaggio;
 import it.epicode.Gestioneviaggiazieldali.entity.Viaggio;
-import it.epicode.Gestioneviaggiazieldali.repository.DipendenteRepository;
 import it.epicode.Gestioneviaggiazieldali.repository.ViaggioRepository;
 import jakarta.persistence.EntityNotFoundException;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
 import java.util.List;
 
 @Service
 public class ViaggioService {
 
-    @Autowired
-    private ViaggioRepository viaggioRepo;
+    private final ViaggioRepository viaggioRepository;
+    private final ViaggioMapper viaggioMapper;
 
-    @Autowired
-    private DipendenteRepository dipendenteRepo;
+    public ViaggioService(ViaggioRepository viaggioRepository, ViaggioMapper viaggioMapper) {
+        this.viaggioRepository = viaggioRepository;
+        this.viaggioMapper = viaggioMapper;
+    }
 
-    public Viaggio assegnaDipendenteAViaggio(Long viaggioId, Long dipendenteId) {
-        Viaggio viaggio = viaggioRepo.findById(viaggioId)
+    public List<ViaggioDto> trovaTutti() {
+        return viaggioRepository.findAll().stream()
+                .map(viaggioMapper::toDto)
+                .toList();
+    }
+
+    public ViaggioDto trovaPerId(Long id) {
+        return viaggioMapper.toDto(
+                viaggioRepository.findById(id)
+                        .orElseThrow(() -> new EntityNotFoundException("Viaggio non trovato"))
+        );
+    }
+
+    public ViaggioDto salva(ViaggioDto dto) {
+        Viaggio viaggio = viaggioMapper.toEntity(dto);
+        return viaggioMapper.toDto(viaggioRepository.save(viaggio));
+    }
+
+    public ViaggioDto aggiorna(Long id, ViaggioDto dto) {
+        Viaggio viaggio = viaggioRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Viaggio non trovato"));
-        Dipendente dipendente = dipendenteRepo.findById(dipendenteId)
-                .orElseThrow(() -> new EntityNotFoundException("Dipendente non trovato"));
 
-        // Controllo sovrapposizione date per il dipendente
-        List<Viaggio> viaggiDipendente = viaggioRepo.findByDipendenti_Id(dipendenteId);
+        viaggio.setDestinazione(dto.getDestinazione());
+        viaggio.setDataInizio(dto.getDataInizio());
+        viaggio.setDataFine(dto.getDataFine());
+        // converto stato String -> enum
+        try {
+            viaggio.setStatoViaggio(StatoViaggio.valueOf(dto.getStato().toUpperCase()));
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Stato non valido: " + dto.getStato());
+        }
+        viaggio.setDescrizione(dto.getDescrizione());
 
-        for (Viaggio v : viaggiDipendente) {
-            if (dateSiSovrappongono(v.getDataInizio(), v.getDataFine(), viaggio.getDataInizio(), viaggio.getDataFine())) {
-                throw new IllegalStateException("Dipendente già impegnato in un altro viaggio in questo intervallo di date");
-            }
+        return viaggioMapper.toDto(viaggioRepository.save(viaggio));
+    }
+
+    public void elimina(Long id) {
+        viaggioRepository.deleteById(id);
+    }
+
+    public ViaggioDto cambiaStato(Long id, String nuovoStato) {
+        Viaggio viaggio = viaggioRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Viaggio non trovato"));
+
+        if (nuovoStato == null) {
+            throw new IllegalArgumentException("Lo stato non può essere null");
         }
 
-        viaggio.getDipendenti().add(dipendente);
-        return viaggioRepo.save(viaggio);
+        try {
+            viaggio.setStatoViaggio(StatoViaggio.valueOf(nuovoStato.toUpperCase()));
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Stato non valido: " + nuovoStato);
+        }
+
+        return viaggioMapper.toDto(viaggioRepository.save(viaggio));
     }
 
-    /**
-     * Cambia lo stato di un viaggio.
-     * @throws EntityNotFoundException se il viaggio non esiste
-     */
-    public Viaggio cambiaStatoViaggio(Long viaggioId, String stato) {
-        Viaggio viaggio = viaggioRepo.findById(viaggioId)
-                .orElseThrow(() -> new EntityNotFoundException("Viaggio non trovato"));
-        viaggio.setStato(stato);
-        return viaggioRepo.save(viaggio);
-    }
-
-    private boolean dateSiSovrappongono(LocalDate inizio1, LocalDate fine1, LocalDate inizio2, LocalDate fine2) {
-        return (inizio1.isBefore(fine2) || inizio1.isEqual(fine2)) &&
-                (inizio2.isBefore(fine1) || inizio2.isEqual(fine1));
-    }
 }

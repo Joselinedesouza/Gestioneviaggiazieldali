@@ -1,81 +1,62 @@
 package it.epicode.Gestioneviaggiazieldali.Controller;
 
+import it.epicode.Gestioneviaggiazieldali.Dto.DipendenteDto;
 import it.epicode.Gestioneviaggiazieldali.entity.Dipendente;
-import it.epicode.Gestioneviaggiazieldali.repository.DipendenteRepository;
-import jakarta.persistence.EntityNotFoundException;
-import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
+import it.epicode.Gestioneviaggiazieldali.service.DipendenteService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/dipendenti")
 public class DipendenteController {
 
-    @Autowired
-    private DipendenteRepository dipendenteRepo;
+    private final DipendenteService dipendenteService;
+
+    public DipendenteController(DipendenteService dipendenteService) {
+        this.dipendenteService = dipendenteService;
+    }
+
 
     @GetMapping
-    public List<Dipendente> getAllDipendenti() {
-        return dipendenteRepo.findAll();
+    public ResponseEntity<List<DipendenteDto>> getAll() {
+        return ResponseEntity.ok(dipendenteService.trovaTutti());
     }
 
+    // GET per ID
+    @GetMapping("/{id}")
+    public ResponseEntity<DipendenteDto> getById(@PathVariable Long id) {
+        return ResponseEntity.ok(dipendenteService.trovaPerId(id));
+    }
+
+    // Crea nuovo dipendente
     @PostMapping
-    public Dipendente createDipendente(@Valid @RequestBody Dipendente dipendente) {
-        return dipendenteRepo.save(dipendente);
+    public ResponseEntity<DipendenteDto> crea(@RequestBody DipendenteDto dto) {
+        return new ResponseEntity<>(dipendenteService.salva(dto), HttpStatus.CREATED);
     }
 
+    // Aggiorna dipendente
     @PutMapping("/{id}")
-    public Dipendente updateDipendente(@PathVariable Long id, @Valid @RequestBody Dipendente dipendenteDetails) {
-        Dipendente dipendente = dipendenteRepo.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Dipendente non trovato"));
-        dipendente.setNome(dipendenteDetails.getNome());
-        dipendente.setCognome(dipendenteDetails.getCognome());
-        dipendente.setEmail(dipendenteDetails.getEmail());
-
-        return dipendenteRepo.save(dipendente);
+    public ResponseEntity<DipendenteDto> aggiorna(@PathVariable Long id, @RequestBody DipendenteDto dto) {
+        return ResponseEntity.ok(dipendenteService.aggiorna(id, dto));
     }
 
+    //  Elimina dipendente
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteDipendente(@PathVariable Long id) {
-        dipendenteRepo.deleteById(id);
-        return ResponseEntity.ok().build();
+    public ResponseEntity<Void> elimina(@PathVariable Long id) {
+        dipendenteService.elimina(id);
+        return ResponseEntity.noContent().build();
     }
 
-    // Upload immagine profilo (path modificato)
-    @PostMapping("/{id}/uploadFoto")
-    public ResponseEntity<?> uploadFoto(@PathVariable Long id, @RequestParam("file") MultipartFile file) {
-        Dipendente dipendente = dipendenteRepo.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Dipendente non trovato"));
-
-        if (file.isEmpty()) {
-            return ResponseEntity.badRequest().body("File vuoto");
-        }
-
-        try {
-            String filename = UUID.randomUUID() + "-" + file.getOriginalFilename();
-            Path uploadPath = Paths.get("uploads");
-            if (!Files.exists(uploadPath)) {
-                Files.createDirectories(uploadPath);
-            }
-            Path filePath = uploadPath.resolve(filename);
-            Files.write(filePath, file.getBytes());
-
-            dipendente.setImmagineProfilo(filename);
-            dipendenteRepo.save(dipendente);
-
-            return ResponseEntity.ok("Immagine caricata con successo");
-        } catch (IOException e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Errore salvataggio file");
-        }
+    //  Upload immagine profilo (Cloudinary)
+    @PostMapping("/{id}/immagine")
+    public ResponseEntity<String> aggiornaImmagineProfilo(@PathVariable Long id,
+                                                          @RequestParam("file") MultipartFile file) throws IOException {
+        Dipendente dip = dipendenteService.aggiornaImmagineProfilo(id, file);
+        return new ResponseEntity<>("Immagine aggiornata con successo: " + dip.getImmagineProfilo(), HttpStatus.CREATED);
     }
 }

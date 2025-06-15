@@ -26,5 +26,5 @@ public class DipendenteDto {
     private String email;
 
     // Cloudinary: URL dell'immagine del profilo salvata nel cloud
-    private String immagineProfiloUrl;
+    private String immagineProfilo;
 }
