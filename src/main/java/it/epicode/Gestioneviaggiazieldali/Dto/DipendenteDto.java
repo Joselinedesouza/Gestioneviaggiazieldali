@@ -1,30 +1,20 @@
 package it.epicode.Gestioneviaggiazieldali.Dto;
 
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import lombok.Data;
 
 @Data
-@NoArgsConstructor
 public class DipendenteDto {
-
-    private Long id;  // per le operazioni di update/delete
-
-    @NotBlank(message = "Username obbligatorio")
+    @NotBlank
     private String username;
 
-    @NotBlank(message = "Nome obbligatorio")
+    @NotBlank
     private String nome;
 
-    @NotBlank(message = "Cognome obbligatorio")
+    @NotBlank
     private String cognome;
 
-    @NotBlank(message = "Email obbligatoria")
-    @Email(message = "Formato email non valido")
+    @Email
     private String email;
-
-    // Cloudinary: URL dell'immagine del profilo salvata nel cloud
-    private String immagineProfilo;
 }

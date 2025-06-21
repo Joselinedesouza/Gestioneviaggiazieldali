@@ -1,9 +1,12 @@
 package it.epicode.Gestioneviaggiazieldali.Controller;
 
+
 import it.epicode.Gestioneviaggiazieldali.Dto.PrenotazioneDto;
+import it.epicode.Gestioneviaggiazieldali.entity.Prenotazione;
 import it.epicode.Gestioneviaggiazieldali.service.PrenotazioneService;
 import jakarta.validation.Valid;
-import org.springframework.http.HttpStatus;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -12,37 +15,21 @@ import java.util.List;
 @RequestMapping("/api/prenotazioni")
 public class PrenotazioneController {
 
-    private final PrenotazioneService prenotazioneService;
-
-    public PrenotazioneController(PrenotazioneService prenotazioneService) {
-        this.prenotazioneService = prenotazioneService;
-    }
+    @Autowired
+    private PrenotazioneService prenotazioneService;
 
     @GetMapping
-    public List<PrenotazioneDto> getAll() {
-        return prenotazioneService.trovaTutti();
-    }
-
-    @GetMapping("/{id}")
-    public PrenotazioneDto getById(@PathVariable Long id) {
-        return prenotazioneService.trovaPerId(id);
+    public List<Prenotazione> getAll() {
+        return prenotazioneService.findAll();
     }
 
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    public PrenotazioneDto creaPrenotazione(@RequestBody @Valid PrenotazioneDto prenotazioneDto) {
-        return prenotazioneService.salva(prenotazioneDto);
+    public Prenotazione create(@RequestBody @Valid PrenotazioneDto dto) {
+        return prenotazioneService.create(dto);
     }
-
-    @PutMapping("/{id}")
-    public PrenotazioneDto aggiorna(@PathVariable Long id,
-                                                @RequestBody @Valid PrenotazioneDto prenotazioneDto) {
-        return prenotazioneService.aggiorna(id, prenotazioneDto);
-    }
-
     @DeleteMapping("/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void eliminaPrenotazione(@PathVariable Long id) {
-        prenotazioneService.elimina(id);
+    public ResponseEntity<Void> deletePrenotazione(@PathVariable Long id) {
+        prenotazioneService.delete(id);
+        return ResponseEntity.noContent().build();
     }
 }

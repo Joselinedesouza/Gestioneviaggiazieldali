@@ -2,11 +2,11 @@ package it.epicode.Gestioneviaggiazieldali.service;
 
 
 import it.epicode.Gestioneviaggiazieldali.Dto.ViaggioDto;
-import it.epicode.Gestioneviaggiazieldali.Mapper.ViaggioMapper;
+import it.epicode.Gestioneviaggiazieldali.Exception.ExceptionNotFound;
 import it.epicode.Gestioneviaggiazieldali.entity.StatoViaggio;
 import it.epicode.Gestioneviaggiazieldali.entity.Viaggio;
 import it.epicode.Gestioneviaggiazieldali.repository.ViaggioRepository;
-import jakarta.persistence.EntityNotFoundException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -14,69 +14,44 @@ import java.util.List;
 @Service
 public class ViaggioService {
 
-    private final ViaggioRepository viaggioRepository;
-    private final ViaggioMapper viaggioMapper;
+    @Autowired
+    private ViaggioRepository viaggioRepo;
 
-    public ViaggioService(ViaggioRepository viaggioRepository, ViaggioMapper viaggioMapper) {
-        this.viaggioRepository = viaggioRepository;
-        this.viaggioMapper = viaggioMapper;
+    public List<Viaggio> findAll() {
+        return viaggioRepo.findAll();
     }
 
-    public List<ViaggioDto> trovaTutti() {
-        return viaggioRepository.findAll().stream()
-                .map(viaggioMapper::toDto)
-                .toList();
+    public Viaggio findById(Long id) {
+        return viaggioRepo.findById(id)
+                .orElseThrow(() -> new ExceptionNotFound("Viaggio non trovato con id: " + id));
     }
 
-    public ViaggioDto trovaPerId(Long id) {
-        return viaggioMapper.toDto(
-                viaggioRepository.findById(id)
-                        .orElseThrow(() -> new EntityNotFoundException("Viaggio non trovato"))
-        );
+    public Viaggio create(ViaggioDto dto) {
+        Viaggio v = new Viaggio();
+        v.setDataInizio(dto.getDataInizio());
+        v.setDataFine(dto.getDataFine());
+        v.setDescrizione(dto.getDescrizione());
+        v.setDestinazione(dto.getDestinazione());
+        v.setStato(dto.getStato());
+        return viaggioRepo.save(v);
     }
 
-    public ViaggioDto salva(ViaggioDto dto) {
-        Viaggio viaggio = viaggioMapper.toEntity(dto);
-        return viaggioMapper.toDto(viaggioRepository.save(viaggio));
+    public Viaggio update(Long id, ViaggioDto dto) {
+        Viaggio v = findById(id);
+        v.setDestinazione(dto.getDestinazione());
+        v.setDataInizio(dto.getDataInizio());
+        v.setDataFine(dto.getDataFine());
+        return viaggioRepo.save(v);
     }
 
-    public ViaggioDto aggiorna(Long id, ViaggioDto dto) {
-        Viaggio viaggio = viaggioRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Viaggio non trovato"));
-
-        viaggio.setDestinazione(dto.getDestinazione());
-        viaggio.setDataInizio(dto.getDataInizio());
-        viaggio.setDataFine(dto.getDataFine());
-        // converto stato String -> enum
-        try {
-            viaggio.setStatoViaggio(StatoViaggio.valueOf(dto.getStato().toUpperCase()));
-        } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Stato non valido: " + dto.getStato());
-        }
-        viaggio.setDescrizione(dto.getDescrizione());
-
-        return viaggioMapper.toDto(viaggioRepository.save(viaggio));
+    public void delete(Long id) {
+        Viaggio v = findById(id);
+        viaggioRepo.delete(v);
     }
 
-    public void elimina(Long id) {
-        viaggioRepository.deleteById(id);
+    public Viaggio aggiornaStato(Long id, StatoViaggio nuovoStato) {
+        Viaggio v = findById(id);
+        v.setStato(nuovoStato);
+        return viaggioRepo.save(v);
     }
-
-    public ViaggioDto cambiaStato(Long id, String nuovoStato) {
-        Viaggio viaggio = viaggioRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Viaggio non trovato"));
-
-        if (nuovoStato == null) {
-            throw new IllegalArgumentException("Lo stato non può essere null");
-        }
-
-        try {
-            viaggio.setStatoViaggio(StatoViaggio.valueOf(nuovoStato.toUpperCase()));
-        } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Stato non valido: " + nuovoStato);
-        }
-
-        return viaggioMapper.toDto(viaggioRepository.save(viaggio));
-    }
-
 }

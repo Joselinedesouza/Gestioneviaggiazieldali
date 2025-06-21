@@ -10,3 +10,4 @@ public class ExceptionNotFound extends RuntimeException {
         super(message);
     }
 }
+

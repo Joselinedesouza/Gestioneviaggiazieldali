@@ -3,6 +3,8 @@ package it.epicode.Gestioneviaggiazieldali.Controller;
 import it.epicode.Gestioneviaggiazieldali.Dto.DipendenteDto;
 import it.epicode.Gestioneviaggiazieldali.entity.Dipendente;
 import it.epicode.Gestioneviaggiazieldali.service.DipendenteService;
+import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -15,48 +17,39 @@ import java.util.List;
 @RequestMapping("/api/dipendenti")
 public class DipendenteController {
 
-    private final DipendenteService dipendenteService;
-
-    public DipendenteController(DipendenteService dipendenteService) {
-        this.dipendenteService = dipendenteService;
-    }
-
+    @Autowired
+    private DipendenteService dipendenteService;
 
     @GetMapping
-    public ResponseEntity<List<DipendenteDto>> getAll() {
-        return ResponseEntity.ok(dipendenteService.trovaTutti());
+    public List<Dipendente> getAll() {
+        return dipendenteService.findAll();
     }
 
-    // GET per ID
     @GetMapping("/{id}")
-    public ResponseEntity<DipendenteDto> getById(@PathVariable Long id) {
-        return ResponseEntity.ok(dipendenteService.trovaPerId(id));
+    public Dipendente getById(@PathVariable Long id) {
+        return dipendenteService.findById(id);
     }
 
-    // Crea nuovo dipendente
     @PostMapping
-    public ResponseEntity<DipendenteDto> crea(@RequestBody DipendenteDto dto) {
-        return new ResponseEntity<>(dipendenteService.salva(dto), HttpStatus.CREATED);
+    public ResponseEntity<Dipendente> crea(@RequestBody @Valid DipendenteDto dto) {
+        Dipendente nuovo = dipendenteService.create(dto);
+        return new ResponseEntity<>(nuovo, HttpStatus.CREATED);
+
     }
 
-    // Aggiorna dipendente
     @PutMapping("/{id}")
-    public ResponseEntity<DipendenteDto> aggiorna(@PathVariable Long id, @RequestBody DipendenteDto dto) {
-        return ResponseEntity.ok(dipendenteService.aggiorna(id, dto));
+    public Dipendente update(@PathVariable Long id, @RequestBody @Valid DipendenteDto dto) {
+        return dipendenteService.update(id, dto);
     }
 
-    //  Elimina dipendente
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> elimina(@PathVariable Long id) {
-        dipendenteService.elimina(id);
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
+        dipendenteService.delete(id);
         return ResponseEntity.noContent().build();
     }
 
-    //  Upload immagine profilo (Cloudinary)
-    @PostMapping("/{id}/immagine")
-    public ResponseEntity<String> aggiornaImmagineProfilo(@PathVariable Long id,
-                                                          @RequestParam("file") MultipartFile file) throws IOException {
-        Dipendente dip = dipendenteService.aggiornaImmagineProfilo(id, file);
-        return new ResponseEntity<>("Immagine aggiornata con successo: " + dip.getImmagineProfilo(), HttpStatus.CREATED);
+    @PostMapping("/{id}/uploadFoto")
+    public Dipendente uploadFoto(@PathVariable Long id, @RequestParam("file") MultipartFile file) throws IOException {
+        return dipendenteService.uploadImmagine(id, file);
     }
 }

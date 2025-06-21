@@ -1,13 +1,13 @@
 package it.epicode.Gestioneviaggiazieldali;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class GestioneviaggiaziendaliApplicationTests {
+public class GestioneviaggiaziendaliApplicationTests {
 
 	@Test
-	void contextLoads() {
+    public void contextLoads() {
 	}
 
 }

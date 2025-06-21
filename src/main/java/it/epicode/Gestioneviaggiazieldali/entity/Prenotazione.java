@@ -1,36 +1,30 @@
 package it.epicode.Gestioneviaggiazieldali.entity;
 
-
+import it.epicode.Gestioneviaggiazieldali.entity.Dipendente;
+import it.epicode.Gestioneviaggiazieldali.entity.Viaggio;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
-import lombok.*;
+import lombok.Data;
 
 import java.time.LocalDate;
 
-@Data
 @Entity
-@Table(name = "prenotazioni",
-        uniqueConstraints = @UniqueConstraint(columnNames = {"dipendente_id", "data_richiesta"}))
+@Data
 public class Prenotazione {
-
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue
     private Long id;
 
-    // Un dipendente per ogni prenotazione
     @ManyToOne
-    @JoinColumn(name = "dipendente_id", nullable = false)
-    private Dipendente dipendente;
-
-    // Un viaggio per ogni prenotazione
-    @ManyToOne
-    @JoinColumn(name = "viaggio_id", nullable = false)
+    @JoinColumn(name = "viaggio_id")
     private Viaggio viaggio;
 
-    @Column(name = "data_richiesta")
+    @ManyToOne
+    @JoinColumn(name = "dipendente_id")
+    private Dipendente dipendente;
+
+    @NotNull
     private LocalDate dataRichiesta;
 
     private String note;
-
-    private String preferenze;
 }

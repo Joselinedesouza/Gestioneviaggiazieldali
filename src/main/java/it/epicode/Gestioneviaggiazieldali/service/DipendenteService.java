@@ -3,10 +3,10 @@ package it.epicode.Gestioneviaggiazieldali.service;
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
 import it.epicode.Gestioneviaggiazieldali.Dto.DipendenteDto;
-import it.epicode.Gestioneviaggiazieldali.Mapper.DipendenteMapper;
+import it.epicode.Gestioneviaggiazieldali.Exception.ExceptionNotFound;
 import it.epicode.Gestioneviaggiazieldali.entity.Dipendente;
 import it.epicode.Gestioneviaggiazieldali.repository.DipendenteRepository;
-import jakarta.persistence.EntityNotFoundException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -16,57 +16,49 @@ import java.util.List;
 @Service
 public class DipendenteService {
 
-    private final DipendenteRepository dipendenteRepository;
-    private final DipendenteMapper dipendenteMapper;
-    private final Cloudinary cloudinary;
+    @Autowired
+    private DipendenteRepository dipendenteRepo;
 
-    public DipendenteService(DipendenteRepository dipendenteRepository, DipendenteMapper dipendenteMapper, Cloudinary cloudinary) {
-        this.dipendenteRepository = dipendenteRepository;
-        this.dipendenteMapper = dipendenteMapper;
-        this.cloudinary = cloudinary;
+    @Autowired
+    private Cloudinary cloudinary;
+
+    public List<Dipendente> findAll() {
+        return dipendenteRepo.findAll();
     }
 
-    public List<DipendenteDto> trovaTutti() {
-        return dipendenteRepository.findAll().stream()
-                .map(dipendenteMapper::toDto)
-                .toList();
+    public Dipendente findById(Long id) {
+        return dipendenteRepo.findById(id)
+                .orElseThrow(() -> new ExceptionNotFound("Dipendente non trovato con id: " + id));
     }
 
-    public DipendenteDto trovaPerId(Long id) {
-        return dipendenteMapper.toDto(
-                dipendenteRepository.findById(id)
-                        .orElseThrow(() -> new EntityNotFoundException("Dipendente non trovato con id: " + id))
-        );
+    public Dipendente create(DipendenteDto dto) {
+        Dipendente d = new Dipendente();
+        d.setUsername(dto.getUsername());
+        d.setNome(dto.getNome());
+        d.setCognome(dto.getCognome());
+        d.setEmail(dto.getEmail());
+        return dipendenteRepo.save(d);
     }
 
-    public DipendenteDto salva(DipendenteDto dto) {
-        Dipendente dip = dipendenteMapper.toEntity(dto);
-        return dipendenteMapper.toDto(dipendenteRepository.save(dip));
+    public Dipendente update(Long id, DipendenteDto dto) {
+        Dipendente d = findById(id);
+        d.setUsername(dto.getUsername());
+        d.setNome(dto.getNome());
+        d.setCognome(dto.getCognome());
+        d.setEmail(dto.getEmail());
+        return dipendenteRepo.save(d);
     }
 
-    public DipendenteDto aggiorna(Long id, DipendenteDto dto) {
-        Dipendente dip = dipendenteRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Dipendente non trovato"));
-        dip.setNome(dto.getNome());
-        dip.setCognome(dto.getCognome());
-        dip.setEmail(dto.getEmail());
-        dip.setUsername(dto.getUsername());
-        return dipendenteMapper.toDto(dipendenteRepository.save(dip));
+    public void delete(Long id) {
+        Dipendente d = findById(id);
+        dipendenteRepo.delete(d);
     }
 
-    public void elimina(Long id) {
-        dipendenteRepository.deleteById(id);
-    }
-
-    public Dipendente aggiornaImmagineProfilo(Long id, MultipartFile file) throws IOException {
-        Dipendente dipendente = dipendenteRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Dipendente non trovato"));
-
-        var uploadResult = cloudinary.uploader().upload(file.getBytes(),
-                ObjectUtils.asMap("folder", "dipendenti"));
-
-        String url = (String) uploadResult.get("secure_url");
-        dipendente.setImmagineProfilo(url);
-        return dipendenteRepository.save(dipendente);
+    public Dipendente uploadImmagine(Long id, MultipartFile file) throws IOException {
+        Dipendente d = findById(id);
+        var uploadResult = cloudinary.uploader().upload(file.getBytes(), ObjectUtils.emptyMap());
+        String url = (String) uploadResult.get("url");
+        d.setImmagineProfiloUrl(url);
+        return dipendenteRepo.save(d);
     }
 }
